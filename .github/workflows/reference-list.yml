@@ -1,0 +1,74 @@
+name: Update reference list
+
+on:
+  schedule:
+    - cron: "0 4 1 * *"   # 04:00 UTC on the 1st of every month
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: referenzliste
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      CSV: data/reference_list_wikidata.csv
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      # Fails the job (non-zero exit) if any Wikidata request fails
+      - name: Build list from Wikidata
+        run: python data/build_reference_list.py
+
+      # Compare without '#' comment lines (they contain the build date)
+      # and abort if the list shrank below 80 % of the committed version
+      - name: Check for content changes
+        id: check
+        run: |
+          python - <<'PY'
+          import csv, os, subprocess, sys
+
+          path = os.environ["CSV"]
+
+          def data_lines(text):
+              return [l for l in text.splitlines() if not l.startswith("#")]
+
+          def count(lines):
+              return max(len(list(csv.reader(lines, delimiter=";"))) - 1, 0)
+
+          old = subprocess.run(["git", "show", f"HEAD:{path}"], capture_output=True, text=True)
+          old_lines = data_lines(old.stdout) if old.returncode == 0 else []
+          with open(path, encoding="utf-8") as f:
+              new_lines = data_lines(f.read())
+
+          n_old, n_new = count(old_lines), count(new_lines)
+          print(f"persons: before {n_old}, now {n_new}")
+
+          if n_new == 0:
+              sys.exit("New list is empty, aborting.")
+          if n_old and n_new < 0.8 * n_old:
+              sys.exit(f"New list has {n_new} persons, less than 80 % of {n_old}, aborting.")
+
+          changed = old_lines != new_lines
+          print("content changed" if changed else "only comment lines changed, nothing to commit")
+          with open(os.environ["GITHUB_OUTPUT"], "a") as out:
+              out.write(f"changed={'true' if changed else 'false'}\n")
+          PY
+
+      - name: Commit and push
+        if: steps.check.outputs.changed == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
+          git add "$CSV"
+          git commit -m "Update reference list from Wikidata"
+          git push

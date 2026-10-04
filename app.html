@@ -1,0 +1,359 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>art-provenance-check</title>
+<style>
+:root{
+  --tinte:#0a0a0a; --text:#1d1d1f; --leise:#6e6e73; --hauch:#a1a1a6;
+  --linie:rgba(60,60,67,.12); --fuellung:rgba(118,118,128,.08); --fuellung-stark:rgba(118,118,128,.14);
+  --signal:#ff4f00; --signal-weich:rgba(255,79,0,.14); --bernstein:#c27c0e;
+  --glas:#ffffff; --glas-rand:rgba(0,0,0,.08);
+  --schatten:0 1px 2px rgba(0,0,0,.04),0 8px 24px rgba(0,0,0,.04);
+  --sans:-apple-system,BlinkMacSystemFont,"SF Pro Text","Inter","Helvetica Neue",Arial,sans-serif;
+  --mono:"SF Mono",ui-monospace,Menlo,monospace;
+}
+*{box-sizing:border-box}
+html{-webkit-font-smoothing:antialiased}
+body{margin:0;min-height:100vh;color:var(--text);font:14px/1.5 var(--sans);background:#fafafa}
+button,input,textarea{font:inherit;color:inherit}
+.glas{background:var(--glas);-webkit-backdrop-filter:blur(30px) saturate(180%);backdrop-filter:blur(30px) saturate(180%);
+  border:1px solid var(--glas-rand);box-shadow:var(--schatten)}
+
+/* Header */
+.kopf{position:sticky;top:12px;z-index:5;max-width:1240px;margin:12px auto 0;padding:0 24px}
+.kopf-innen{height:56px;border-radius:18px;display:flex;align-items:center;gap:24px;padding:0 10px 0 18px}
+.marke{display:flex;align-items:center;gap:10px;font-weight:600;font-size:15px;letter-spacing:-.01em;white-space:nowrap}
+.marke i{width:14px;height:14px;border-radius:4px;background:var(--signal)}
+.segment{display:flex;background:var(--fuellung-stark);border-radius:11px;padding:3px;gap:2px}
+.segment a{padding:6px 14px;border-radius:8px;color:var(--leise);cursor:pointer;font-weight:500;font-size:13px;transition:background .2s,color .2s;white-space:nowrap}
+.segment a:hover{color:var(--text)}
+.segment a.an{background:#fff;color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.12),0 0 0 .5px rgba(0,0,0,.04)}
+.kopf-rechts{margin-left:auto;display:flex;align-items:center;gap:14px}
+.status{font-size:12px;color:var(--leise);display:flex;align-items:center;gap:7px;white-space:nowrap}
+.status i{width:7px;height:7px;border-radius:50%;background:#34c759;box-shadow:0 0 0 3px rgba(52,199,89,.18)}
+.segment.klein a{padding:4px 10px;font-size:12px}
+
+/* Layout */
+.seite{max-width:1240px;margin:0 auto;padding:24px}
+.spalten{display:grid;grid-template-columns:360px minmax(0,1fr);gap:20px;align-items:start}
+.eingabe{position:sticky;top:92px;border-radius:22px;padding:22px}
+.eingabe h2{font-size:19px;font-weight:700;letter-spacing:-.02em;margin:0 0 4px}
+.eingabe .intro{color:var(--leise);margin:0 0 16px;font-size:13px}
+label{display:block;font-size:12px;font-weight:600;color:var(--leise);margin:14px 0 6px}
+textarea,.feld{width:100%;padding:11px 12px;border:1px solid transparent;background:var(--fuellung);border-radius:12px;transition:border-color .2s,box-shadow .2s,background .2s}
+textarea{min-height:180px;resize:vertical;line-height:1.5}
+textarea:focus,.feld:focus{outline:none;background:#fff;border-color:rgba(255,79,0,.5);box-shadow:0 0 0 4px var(--signal-weich)}
+.zwei{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.knopf{margin-top:18px;width:100%;background:var(--tinte);color:#fff;border:0;padding:12px 0;border-radius:12px;font-weight:600;cursor:pointer;transition:transform .1s,background .2s}
+.knopf:hover{background:#262626}.knopf:active{transform:scale(.99)}
+.knopf.klein{width:auto;padding:9px 16px;margin-top:0}
+.zweit{background:var(--fuellung-stark);border:0;padding:9px 16px;border-radius:12px;cursor:pointer;font-weight:600}
+.zweit:hover{background:rgba(118,118,128,.2)}
+.beispiele{margin:10px 0 0;font-size:12px;color:var(--leise);display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.beispiele a{cursor:pointer;background:var(--fuellung);padding:3px 10px;border-radius:999px;color:var(--text)}
+.beispiele a:hover{background:var(--fuellung-stark)}
+.fusszeile{margin-top:16px;font-size:12px;color:var(--hauch)}
+.datei{display:block;border:1.5px dashed rgba(60,60,67,.25);border-radius:14px;padding:20px 12px;text-align:center;color:var(--leise);cursor:pointer;font-size:13px;font-weight:500;margin:0;transition:border-color .2s,background .2s}
+.datei:hover{border-color:var(--signal);background:rgba(255,79,0,.04)}
+.datei input{display:none}
+.mono{font-family:var(--mono);font-size:12px}
+
+/* Report */
+.bericht{border-radius:22px;min-height:540px;overflow:hidden}
+.bericht-kopf{padding:26px 28px 20px;display:flex;gap:20px;align-items:flex-start}
+.bericht-titel{font-size:28px;font-weight:700;letter-spacing:-.03em;line-height:1.12;margin:0}
+.bericht-meta{color:var(--leise);font-size:12.5px;margin-top:6px}
+.stufe-gross{margin-left:auto;min-width:176px;padding:14px 16px 15px;border-radius:16px;background:#fff;border:1px solid var(--linie)}
+.stufe-gross .etikett{font-size:12px;font-weight:500;color:var(--leise)}
+.stufe-gross .wert{font-size:28px;font-weight:700;letter-spacing:-.025em;line-height:1.15;margin-top:2px;color:var(--text)}
+.messer{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-top:10px}
+.messer i{height:4px;border-radius:2px;background:rgba(118,118,128,.16)}
+.messer i.an{background:currentColor}
+.zahlen{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;padding:0 28px 6px}
+.zahl{background:var(--fuellung);border-radius:16px;padding:14px 16px}
+.zahl b{display:block;font-size:26px;font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums;line-height:1.1}
+.zahl span{font-size:12px;color:var(--leise);font-weight:500}
+.abschnitt{padding:20px 28px}
+.abschnitt h3{font-size:15px;font-weight:600;letter-spacing:-.01em;margin:0 0 12px;display:flex;align-items:baseline;gap:8px}
+.abschnitt h3 small{font-size:12px;color:var(--leise);font-weight:500}
+.c-hoch{color:var(--signal)}.c-mittel{color:var(--bernstein)}.c-hinweis{color:var(--leise)}.c-gering{color:var(--text)}
+
+/* Timeline */
+.leiste{display:grid;gap:4px}
+.leiste .feld-j{height:30px;border-radius:7px}
+.leiste .belegt{background:var(--tinte)}
+.leiste .erschlossen{background:repeating-linear-gradient(135deg,rgba(118,118,128,.10) 0 4px,rgba(118,118,128,.30) 4px 5px);box-shadow:inset 0 0 0 1px rgba(60,60,67,.18)}
+.leiste .offen{background:#fff;box-shadow:inset 0 0 0 2px var(--signal)}
+.jahre{display:grid;gap:4px;margin-top:6px;font-size:11px;color:var(--leise);text-align:center;font-variant-numeric:tabular-nums}
+.legende{margin-top:10px;font-size:12px;color:var(--leise);display:flex;gap:16px}
+.legende i{display:inline-block;width:12px;height:12px;border-radius:4px;vertical-align:-2px;margin-right:6px}
+
+/* Grouped lists */
+.liste{background:rgba(255,255,255,.55);border:1px solid var(--linie);border-radius:16px;overflow:hidden}
+.liste .reihe{display:grid;grid-template-columns:44px 1fr auto;gap:12px;padding:11px 16px;border-top:1px solid var(--linie);align-items:start}
+.liste .reihe:first-child{border-top:0}
+.nr{font-family:var(--mono);font-size:12px;color:var(--hauch);padding-top:2px}
+.reihe.s-hoch .nr{color:var(--signal)}.reihe.s-mittel .nr{color:var(--bernstein)}
+.zeit{color:var(--leise);font-variant-numeric:tabular-nums;font-size:13px;white-space:nowrap}
+.marken{margin-top:4px;display:flex;gap:6px;flex-wrap:wrap}
+.marken span{font-size:11px;font-weight:500;color:var(--leise);background:var(--fuellung);padding:1px 8px;border-radius:999px}
+.gruppe{margin-bottom:14px}.gruppe:last-child{margin-bottom:0}
+.gruppe h4{margin:0 0 8px;font-size:12px;font-weight:600;display:flex;align-items:center;gap:7px}
+.gruppe h4 i{width:8px;height:8px;border-radius:50%;background:currentColor}
+.befund-r{display:grid;grid-template-columns:44px 1fr;gap:12px;padding:11px 16px;border-top:1px solid var(--linie)}
+.befund-r:first-child{border-top:0}
+.aktionen{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.klein{font-size:12px;color:var(--leise)}
+
+/* Empty state */
+.leer{padding:48px 40px;max-width:640px}
+.leer h2{font-size:30px;font-weight:700;letter-spacing:-.03em;line-height:1.12;margin:0 0 10px}
+.leer p{color:var(--leise);font-size:15px}
+.schritte{list-style:none;padding:0;margin:24px 0 0;display:grid;gap:8px;counter-reset:s}
+.schritte li{background:var(--fuellung);border-radius:14px;padding:12px 14px 12px 46px;position:relative;counter-increment:s}
+.schritte li::before{content:counter(s);position:absolute;left:14px;top:12px;width:20px;height:20px;border-radius:6px;background:var(--tinte);color:#fff;font-size:11px;font-weight:700;display:grid;place-items:center}
+
+/* Print process */
+.bilder{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.bilder figure{margin:0}
+.bilder img{width:100%;display:block;border-radius:14px;box-shadow:0 6px 20px rgba(0,0,0,.12)}
+.bilder figcaption{font-size:12px;color:var(--leise);margin-top:8px}
+.laed{color:var(--leise);padding:48px 40px;display:flex;align-items:center;gap:10px}
+.laed i{width:16px;height:16px;border-radius:50%;border:2px solid var(--fuellung-stark);border-top-color:var(--signal);animation:dreh .8s linear infinite}
+@keyframes dreh{to{transform:rotate(360deg)}}
+
+/* Catalogue */
+table.lose{border-collapse:collapse;width:100%;table-layout:fixed}
+table.lose th{font-size:12px;color:var(--leise);font-weight:600;text-align:left;padding:10px 12px;border-bottom:1px solid var(--linie)}
+table.lose td{padding:11px 12px;border-bottom:1px solid var(--linie);vertical-align:top}
+table.lose tr:last-child td{border-bottom:0}
+table.lose tr.zeile{cursor:pointer;transition:background .15s}
+table.lose tr.zeile:hover td{background:rgba(255,255,255,.7)}
+td.stufe{font-weight:600;font-size:13px}
+td.losbefund{color:#3a3a3c;font-size:13px}
+
+@media (max-width:900px){
+  .kopf{padding:0 12px}.kopf-innen{gap:10px;padding:0 8px 0 12px}.status{display:none}
+  .seite{padding:12px}.spalten{grid-template-columns:1fr}.eingabe{position:static}
+  .zahlen{grid-template-columns:repeat(2,1fr)}.bilder{grid-template-columns:1fr}
+}
+@media print{
+  body{background:#fff}.kopf,.eingabe,.aktionen{display:none}.seite{padding:0}.spalten{display:block}
+  .glas{box-shadow:none;border:0;backdrop-filter:none;background:#fff}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<header class="kopf"><div class="kopf-innen glas">
+  <div class="marke"><i></i>art-provenance-check</div>
+  <nav class="segment">
+    <a id="t1" class="an" onclick="tab(1)" data-t="tabProv"></a>
+    <a id="t3" onclick="tab(3)" data-t="tabKat"></a>
+    <a id="t2" onclick="tab(2)" data-t="tabDruck"></a>
+  </nav>
+  <div class="kopf-rechts">
+    <span class="status"><i></i><span data-t="lokal"></span></span>
+    <nav class="segment klein"><a id="s-en" onclick="sprache('en')">EN</a><a id="s-de" onclick="sprache('de')">DE</a></nav>
+  </div>
+</div></header>
+
+<div class="seite">
+<section id="p1" class="spalten">
+  <aside class="eingabe glas">
+    <h2 data-t="provTitel"></h2>
+    <p class="intro" data-t="provIntro"></p>
+    <label for="text" data-t="provText"></label>
+    <textarea id="text"></textarea>
+    <p class="beispiele"><span data-t="beispiel"></span><a onclick="bsp(0)" data-t="bspLuecke"></a><a onclick="bsp(1)" data-t="bspListe"></a><a onclick="bsp(2)" data-t="bspRuhig"></a></p>
+    <div class="zwei">
+      <div><label for="jahr" data-t="jahr"></label><input class="feld" id="jahr" inputmode="numeric" placeholder="1912"></div>
+      <div><label for="obj" data-t="objekt"></label><input class="feld" id="obj"></div>
+    </div>
+    <button class="knopf" onclick="pruefen()" data-t="pruefen"></button>
+    <div class="fusszeile" id="liste">&nbsp;</div>
+  </aside>
+  <article class="bericht glas" id="erg1"></article>
+</section>
+
+<section id="p3" class="spalten" style="display:none">
+  <aside class="eingabe glas">
+    <h2 data-t="katTitel"></h2>
+    <p class="intro" data-t="katIntro"></p>
+    <label class="datei"><input type="file" id="katdatei" accept=".csv,.txt,text/csv" onchange="katEinlesen()"><span id="kattext" data-t="katWaehlen"></span></label>
+    <label for="katcsv" data-t="katEinfuegen"></label>
+    <textarea id="katcsv" style="min-height:130px" placeholder="lot;title;year;provenance"></textarea>
+    <p class="beispiele"><a onclick="katBeispiel()" data-t="katBeispiel"></a></p>
+    <button class="knopf" onclick="katalog()" data-t="katPruefen"></button>
+    <div class="fusszeile" data-t="katFuss"></div>
+  </aside>
+  <article class="bericht glas" id="erg3"></article>
+</section>
+
+<section id="p2" class="spalten" style="display:none">
+  <aside class="eingabe glas">
+    <h2 data-t="druckTitel"></h2>
+    <p class="intro" data-t="druckIntro"></p>
+    <label class="datei"><input type="file" id="foto" accept="image/*" onchange="dateiname()"><span id="dateitext" data-t="fotoWaehlen"></span></label>
+    <label for="um" data-t="massstab"></label>
+    <input class="feld" id="um" inputmode="decimal" placeholder="10">
+    <button class="knopf" onclick="drucken()" data-t="analysieren"></button>
+    <div class="fusszeile" data-t="druckFuss"></div>
+  </aside>
+  <article class="bericht glas" id="erg2"></article>
+</section>
+</div>
+
+<script>
+const T={
+ en:{tabProv:"Provenance",tabKat:"Catalogue",tabDruck:"Print process",lokal:"Local · no data leaves this computer",
+  provTitel:"Review a provenance",provIntro:"Paste the text as printed in the catalogue. German or English.",provText:"Provenance text",
+  beispiel:"Examples",bspLuecke:"Gap",bspListe:"Reference list",bspRuhig:"No findings",jahr:"Year made",objekt:"Object / lot",pruefen:"Run review",
+  katTitel:"Review a catalogue",katIntro:"All lots of a sale at once. CSV with a header row: lot, title, year, provenance.",katWaehlen:"Choose CSV file",
+  katEinfuegen:"or paste",katBeispiel:"Load sample catalogue",katPruefen:"Review catalogue",katFuss:"Each lot is reviewed on its own. Output: ranked overview and one PDF record per lot.",
+  druckTitel:"Identify the print process",druckIntro:"Macro photo at 10–30× magnification, e.g. a phone with a clip-on lens, taken on a halftone area.",
+  fotoWaehlen:"Choose photo",massstab:"Scale (µm per pixel)",analysieren:"Analyse",druckFuss:"The process is read from the microstructure in the Fourier spectrum. Not proof of authenticity.",
+  leerProvT:"Provenance review",leerProvP:"The tool splits a provenance into stations and shows which sections need further research. The result is a review level, never a clearance.",
+  leerProv:["1933–1945, year by year: documented, inferred or open.","Ownership changes, confiscation, forced sales and restitution in that period.","Names matched against a reference list built from Wikidata, with life dates.","Audit record with checksums and the § 42 KGSG checklist, as PDF."],
+  leerKatT:"A whole catalogue in one pass",leerKatP:"For auction houses: lots are ranked by review level, so research starts where it is needed.",
+  leerKat:["Overview of all lots with review level and key finding.","Click a lot to open its full review.","Overview and every record as PDF in one ZIP archive."],
+  leerDruckT:"Offset, inkjet or hand-pulled?",leerDruckP:"Every print process leaves its own microstructure. The Fourier spectrum makes it measurable.",
+  leerDruck:["Offset: regular dot screen, point-like peaks in the spectrum; several angles form a rosette.","Inkjet / giclée: fine, irregular dots without peaks.","Stone lithography: clumpy grain, energy in coarse structures."],
+  bericht:"Provenance review",stufe:"Review level",stationen:"Stations",hoch:"High",mittel:"Medium",hinweise:"Notes",gering:"Low",hinweis:"Note",
+  zeitraum:"Period under § 44 KGSG",zeitraumK:"30 Jan 1933 – 8 May 1945",belegt:"documented",erschlossen:"inferred",offen:"open",kette:"Provenance chain",befunde:"Findings",
+  nichts:"Nothing found in the text.",pdf:"PDF record",md:"Markdown",entstanden:"made",laeuft:"Running review…",
+  katBericht:"Catalogue review",lose:"lots",katHoch:"High review level",los:"Lot",werk:"Work",entst:"Year",befund:"Key finding",katKlick:"Click a lot to open its full review.",zip:"All records as PDF (ZIP)",katLaeuft:"Reviewing lots…",
+  ergebnis:"Result",sicherheit:"Confidence",winkel:"Screen angles",spitzen:"In peaks",feingrob:"Fine to coarse",rasterweite:"Screen ruling",massst:"Scale",
+  ausschnitt:"Sharpest tile",spektrum:"Fourier spectrum · centre coarse, edge fine",markiert:" · screen peaks marked",begruendung:"Reasoning",einordnung:"Interpretation",analyseLaeuft:"Analysing…",
+  fotoZuerst:"Please choose a photo first",csvZuerst:"Please choose a CSV first",
+  ex:["Collection Felix Example, Breslau (until 1932); art market, Zurich; private collection, Switzerland (since 1958); sale, Auction House Example, Lucerne, 14 Nov 2019",
+      "Collection Emma Example, Vienna (until 1938); confiscated 1938; Karl Haberstock gallery, Berlin (1939); private collection, Germany",
+      "Galerie Example, Munich (1925); Dr. Richard Sample, Hamburg (1925-1951); by descent to the family; private collection, Northern Germany (since 2012)"]},
+ de:{tabProv:"Provenienz",tabKat:"Katalog",tabDruck:"Druckverfahren",lokal:"Lokal · keine Daten verlassen diesen Rechner",
+  provTitel:"Provenienz prüfen",provIntro:"Text so einfügen, wie er im Katalog steht. Deutsch oder Englisch.",provText:"Provenienztext",
+  beispiel:"Beispiele",bspLuecke:"Lücke",bspListe:"Referenzliste",bspRuhig:"Ohne Befund",jahr:"Entstehungsjahr",objekt:"Objekt / Los",pruefen:"Prüfen",
+  katTitel:"Katalog prüfen",katIntro:"Alle Lose einer Auktion auf einmal. CSV mit Kopfzeile: Los, Titel, Entstehung, Provenienz.",katWaehlen:"CSV auswählen",
+  katEinfuegen:"oder einfügen",katBeispiel:"Beispielkatalog laden",katPruefen:"Katalog prüfen",katFuss:"Jedes Los wird einzeln geprüft. Ergebnis: Übersicht nach Prüfbedarf und ein PDF-Protokoll je Los.",
+  druckTitel:"Druckverfahren bestimmen",druckIntro:"Makrofoto mit 10- bis 30-facher Vergrößerung, etwa Handy mit Clip-Linse, an einer Stelle mit Halbtönen.",
+  fotoWaehlen:"Foto auswählen",massstab:"Maßstab (µm pro Pixel)",analysieren:"Analysieren",druckFuss:"Bestimmt wird das Verfahren aus der Mikrostruktur im Fourier-Spektrum. Kein Echtheitsnachweis.",
+  leerProvT:"Prüfbericht zur Provenienz",leerProvP:"Das Werkzeug zerlegt die Provenienz in Stationen und zeigt, welche Abschnitte vertieft zu prüfen sind. Das Ergebnis ist ein Prüfbedarf, keine Freigabe.",
+  leerProv:["1933–1945 Jahr für Jahr: belegt, erschlossen oder offen.","Besitzwechsel, Beschlagnahme, Zwangsverkauf und Restitution in diesem Zeitraum.","Abgleich der Namen mit einer Referenzliste aus Wikidata, mit Lebensdaten.","Prüfprotokoll mit Prüfsummen und Checkliste nach § 42 KGSG, als PDF."],
+  leerKatT:"Ein ganzer Katalog in einem Durchgang",leerKatP:"Für Auktionshäuser: Die Lose werden nach Prüfbedarf sortiert, damit die Recherche dort beginnt, wo sie gebraucht wird.",
+  leerKat:["Übersicht aller Lose mit Prüfbedarf und wichtigstem Befund.","Ein Klick auf ein Los öffnet den vollständigen Prüfbericht.","Übersicht und alle Protokolle als PDF in einem ZIP-Archiv."],
+  leerDruckT:"Offset, Inkjet oder Handabzug?",leerDruckP:"Jedes Druckverfahren hinterlässt eine eigene Mikrostruktur. Im Fourier-Spektrum wird sie messbar.",
+  leerDruck:["Offset: regelmäßiges Punktraster, im Spektrum punktförmige Spitzen; mehrere Winkel bilden eine Rosette.","Inkjet / Giclée: feine, unregelmäßig verteilte Punkte ohne Spitzen.","Lithografie vom Stein: klumpige Körnung, Energie bei groben Strukturen."],
+  bericht:"Prüfbericht Provenienz",stufe:"Prüfbedarf",stationen:"Stationen",hoch:"Hoch",mittel:"Mittel",hinweise:"Hinweise",gering:"Gering",hinweis:"Hinweis",
+  zeitraum:"Zeitraum nach § 44 KGSG",zeitraumK:"30.01.1933 – 08.05.1945",belegt:"belegt",erschlossen:"erschlossen",offen:"offen",kette:"Provenienzkette",befunde:"Befunde",
+  nichts:"Im Text nichts gefunden.",pdf:"PDF-Protokoll",md:"Markdown",entstanden:"entstanden",laeuft:"Prüfung läuft …",
+  katBericht:"Katalogprüfung",lose:"Lose",katHoch:"Prüfbedarf hoch",los:"Los",werk:"Werk",entst:"Entst.",befund:"Wichtigster Befund",katKlick:"Ein Klick auf ein Los öffnet den vollständigen Prüfbericht.",zip:"Alle Protokolle als PDF (ZIP)",katLaeuft:"Lose werden geprüft …",
+  ergebnis:"Ergebnis",sicherheit:"Sicherheit",winkel:"Rasterwinkel",spitzen:"In Spitzen",feingrob:"Fein zu grob",rasterweite:"Rasterweite",massst:"Maßstab",
+  ausschnitt:"Schärfster Ausschnitt",spektrum:"Fourier-Spektrum · Mitte grob, Rand fein",markiert:" · Rasterspitzen markiert",begruendung:"Begründung",einordnung:"Einordnung",analyseLaeuft:"Analyse läuft …",
+  fotoZuerst:"Bitte zuerst ein Foto auswählen",csvZuerst:"Bitte zuerst eine CSV wählen",
+  ex:["Sammlung Felix Beispiel, Breslau (bis 1932); Kunsthandel, Zürich; Privatsammlung, Schweiz (seit 1958); Versteigerung Kunsthaus Muster, Luzern, 14.11.2019",
+      "Sammlung Emma Beispiel, Wien (bis 1938); 1938 beschlagnahmt; Kunsthandlung Karl Haberstock, Berlin (1939); Privatsammlung, Deutschland",
+      "Galerie Beispiel, München (1925); Sammlung Dr. Richard Muster, Hamburg (1925-1951); durch Erbschaft an die Familie; Privatsammlung, Norddeutschland (seit 2012)"]}};
+const J=["1912","1910","1920"];
+let L=new URLSearchParams(location.search).get('lang')||'en';
+const t=k=>T[L][k];
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const STUFE=s=>t({hoch:'hoch',mittel:'mittel',hinweis:'hinweis',gering:'gering'}[s]);
+
+function leer(id,titel,text,punkte){document.getElementById(id).innerHTML='<div class="leer"><h2>'+t(titel)+'</h2><p>'+t(text)+'</p><ol class="schritte">'+t(punkte).map(p=>'<li>'+esc(p)+'</li>').join('')+'</ol></div>'}
+function sprache(s){L=s;document.documentElement.lang=s;
+  document.querySelectorAll('[data-t]').forEach(e=>{e.textContent=t(e.dataset.t)});
+  for(const x of['en','de'])document.getElementById('s-'+x).className=x==s?'an':'';
+  text.placeholder=t('ex')[0].split(';').slice(0,2).join(';')+' …';
+  leer('erg1','leerProvT','leerProvP','leerProv');leer('erg3','leerKatT','leerKatP','leerKat');leer('erg2','leerDruckT','leerDruckP','leerDruck');
+  infoLaden()}
+function infoLaden(){fetch('/info?lang='+L).then(r=>r.json()).then(d=>{document.getElementById('liste').textContent=d.liste})}
+function tab(n){for(const i of[1,2,3]){document.getElementById('p'+i).style.display=i==n?'':'none';document.getElementById('t'+i).className=i==n?'an':''}}
+function bsp(i){text.value=t('ex')[i];jahr.value=J[i]}
+function dateiname(){const f=foto.files[0];dateitext.textContent=f?f.name:t('fotoWaehlen')}
+function laedt(id,k){document.getElementById(id).innerHTML='<div class="laed"><i></i>'+t(k)+'</div>'}
+
+function stationsStufen(befunde){const rang={hoch:0,mittel:1,hinweis:2},m={};
+  for(const f of befunde){const nr=[f.station,...((f.text.match(/(?:auch Station|also station)s? ([\d, ]+)/i)||[,''])[1].split(',').map(x=>+x).filter(Boolean))].filter(Boolean);
+    for(const n of nr){if(m[n]===undefined||rang[f.stufe]<rang[m[n]])m[n]=f.stufe}}return m}
+const MARKE={en:{haendler:"Dealer",auktion:"Auction",erbgang:"Inheritance",entzug:"Seizure",restitution:"Restitution",institution:"Institution",kuenstler:"Artist",anonym:"anonymous"},
+             de:{haendler:"Handel",auktion:"Versteigerung",erbgang:"Erbgang",entzug:"Entzug",restitution:"Restitution",institution:"Institution",kuenstler:"Künstler",anonym:"anonym"}};
+function kopf(titel,meta,etikett,wert,farbe,stufe){
+  const messer=stufe?'<div class="messer '+farbe+'">'+[1,2,3].map(i=>'<i class="'+(i<=stufe?'an':'')+'"></i>').join('')+'</div>':'';
+  return '<div class="bericht-kopf"><div><h1 class="bericht-titel">'+titel+'</h1><div class="bericht-meta">'+meta+'</div></div>'
+  +'<div class="stufe-gross"><div class="etikett">'+etikett+'</div><div class="wert '+farbe+'">'+wert+'</div>'+messer+'</div></div>'}
+const RANG={gering:1,niedrig:1,mittel:2,hoch:3};
+const SICH={en:{hoch:'High',mittel:'Medium',niedrig:'Low'},de:{hoch:'Hoch',mittel:'Mittel',niedrig:'Niedrig'}};
+function zahlen(paare){return '<div class="zahlen">'+paare.map(([w,n,c])=>'<div class="zahl"><b class="'+(c||'')+'">'+w+'</b><span>'+n+'</span></div>').join('')+'</div>'}
+
+async function pruefen(){
+  laedt('erg1','laeuft');
+  const d=await (await fetch('/provenienz',{method:'POST',body:JSON.stringify({text:text.value,entstehung:jahr.value,objekt:obj.value,sprache:L})})).json();
+  const e=document.getElementById('erg1');
+  if(d.fehler){e.innerHTML='<div class="leer"><p>'+esc(d.fehler)+'</p></div>';return}
+  const b=d.bericht,z={hoch:0,mittel:0,hinweis:0};b.befunde.forEach(f=>z[f.stufe]++);const st=stationsStufen(b.befunde);
+  let h=kopf(t('bericht'),(d.objekt?esc(d.objekt)+' · ':'')+d.datum+(jahr.value?' · '+t('entstanden')+' '+esc(jahr.value):'')+' · <span class="mono">PP-'+b.eingabe_sha256.slice(0,8).toUpperCase()+'</span>',
+    t('stufe'),STUFE(b.pruefbedarf),'c-'+b.pruefbedarf,RANG[b.pruefbedarf]);
+  h+=zahlen([[b.stationen.length,t('stationen')],[z.hoch,t('hoch'),'c-hoch'],[z.mittel,t('mittel'),'c-mittel'],[z.hinweis,t('hinweise')]]);
+  if(b.ns_relevant){const j=Object.entries(b.zeitraum),sp='grid-template-columns:repeat('+j.length+',1fr)';
+    h+='<div class="abschnitt"><h3>'+t('zeitraum')+' <small>'+t('zeitraumK')+'</small></h3><div class="leiste" style="'+sp+'">'
+      +j.map(([y,v])=>'<div class="feld-j '+v+'" title="'+y+': '+t(v)+'"></div>').join('')+'</div><div class="jahre" style="'+sp+'">'+j.map(([y])=>'<span>'+y+'</span>').join('')+'</div>'
+      +'<div class="legende"><span><i style="background:var(--tinte)"></i>'+t('belegt')+'</span><span><i style="background:repeating-linear-gradient(135deg,rgba(118,118,128,.1) 0 3px,rgba(118,118,128,.35) 3px 4px);box-shadow:inset 0 0 0 1px rgba(60,60,67,.2)"></i>'+t('erschlossen')+'</span><span><i style="box-shadow:inset 0 0 0 2px var(--signal)"></i>'+t('offen')+'</span></div></div>'}
+  h+='<div class="abschnitt"><h3>'+t('kette')+'</h3><div class="liste">'+b.stationen.map(s=>{const m=[...s.arten.map(a=>MARKE[L][a]),...(s.anonym?[MARKE[L].anonym]:[])];
+    return '<div class="reihe s-'+(st[s.nr]||'')+'"><span class="nr">'+String(s.nr).padStart(2,'0')+'</span><div>'+esc(s.text)+(m.length?'<div class="marken">'+m.map(x=>'<span>'+x+'</span>').join('')+'</div>':'')+'</div><span class="zeit">'+esc(d.zeiten[s.nr-1])+'</span></div>'}).join('')+'</div></div>';
+  h+='<div class="abschnitt"><h3>'+t('befunde')+'</h3>';
+  for(const s of['hoch','mittel','hinweis']){const l=b.befunde.filter(f=>f.stufe==s);if(!l.length)continue;
+    h+='<div class="gruppe"><h4 class="c-'+s+'"><i></i>'+STUFE(s)+' · '+l.length+'</h4><div class="liste">'
+      +l.map(f=>'<div class="befund-r"><span class="nr">'+(f.station?(L=='en'?'E':'S')+String(f.station).padStart(2,'0'):'—')+'</span><span>'+esc(f.text.replace(/ \((auch Station|also station)s? [\d, ]+\)/i,''))+'</span></div>').join('')+'</div></div>'}
+  if(!b.befunde.length)h+='<p class="klein">'+t('nichts')+'</p>';
+  h+='</div><div class="abschnitt"><div class="aktionen"><button class="knopf klein" onclick="pdfLaden()">'+t('pdf')+'</button><button class="zweit" onclick="laden()">'+t('md')+'</button></div>'
+    +'<p class="klein" style="margin-top:14px">'+esc(d.schluss)+'</p></div>';
+  e.innerHTML=h;window._prot=d.protokoll;window.scrollTo({top:0,behavior:'smooth'})}
+function speichern(b64,name,typ){const a=document.createElement('a');a.href='data:'+typ+';base64,'+b64;a.download=name;a.click()}
+async function pdfLaden(){const d=await (await fetch('/pdf',{method:'POST',body:JSON.stringify({text:text.value,entstehung:jahr.value,objekt:obj.value,sprache:L})})).json();
+  if(d.pdf)speichern(d.pdf,(L=='en'?'review_record':'pruefprotokoll')+(obj.value?'_'+obj.value.replace(/[^\w.-]+/g,'_'):'')+'.pdf','application/pdf')}
+function laden(){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([window._prot],{type:'text/markdown'}));a.download=(L=='en'?'review_record':'pruefprotokoll')+'.md';a.click()}
+
+let KAT={csv:'',name:'catalogue',lose:[]};
+function katEinlesen(){const f=katdatei.files[0];if(!f)return;kattext.textContent=f.name;KAT.name=f.name;const r=new FileReader();r.onload=()=>{katcsv.value=r.result};r.readAsText(f)}
+async function katBeispiel(){katcsv.value=await (await fetch('/beispielkatalog?lang='+L)).text();KAT.name=L=='en'?'catalogue_example.csv':'catalogue_example_de.csv';kattext.textContent=KAT.name}
+async function katalog(){KAT.csv=katcsv.value;if(!KAT.csv.trim()){kattext.textContent=t('csvZuerst');return}
+  laedt('erg3','katLaeuft');const d=await (await fetch('/katalog',{method:'POST',body:JSON.stringify({csv:KAT.csv,sprache:L})})).json();const e=document.getElementById('erg3');
+  if(d.fehler){e.innerHTML='<div class="leer"><p>'+esc(d.fehler)+'</p></div>';return}
+  KAT.lose=d.lose;const z={hoch:0,mittel:0,gering:0};d.lose.forEach(l=>z[l.pruefbedarf]++);
+  let h=kopf(t('katBericht'),esc(KAT.name)+' · '+d.lose.length+' '+t('lose')+' · '+new Date().toLocaleDateString(L=='en'?'en-GB':'de-DE'),t('katHoch'),z.hoch+' / '+d.lose.length,z.hoch?'c-hoch':'');
+  h+=zahlen([[d.lose.length,t('lose')],[z.hoch,t('hoch'),'c-hoch'],[z.mittel,t('mittel'),'c-mittel'],[z.gering,t('gering')]]);
+  h+='<div class="abschnitt"><div class="liste"><table class="lose"><colgroup><col style="width:64px"><col style="width:28%"><col style="width:64px"><col style="width:96px"><col></colgroup><tr><th>'+t('los')+'</th><th>'+t('werk')+'</th><th>'+t('entst')+'</th><th>'+t('stufe')+'</th><th>'+t('befund')+'</th></tr>'
+    +d.lose.map((l,i)=>'<tr class="zeile" onclick="katOeffnen('+i+')"><td class="mono">'+esc(l.los)+'</td><td>'+esc(l.titel||'–')+'</td><td class="mono">'+(l.entstehung||'–')+'</td><td class="stufe c-'+l.pruefbedarf+'">'+STUFE(l.pruefbedarf)
+      +'</td><td class="losbefund">'+esc((l.befund||t('nichts')).replace(/ – (Abschnitt vertieft prüfen|further research required)/,'').replace(/, Wikidata Q\d+/,'').replace(/ \((auch Station|also station)s? [\d, ]+\)/i,''))+'</td></tr>').join('')+'</table></div>'
+    +'<p class="klein" style="margin-top:10px">'+t('katKlick')+'</p></div><div class="abschnitt"><div class="aktionen"><button class="knopf klein" onclick="katZip()">'+t('zip')+'</button></div></div>';
+  e.innerHTML=h}
+function katOeffnen(i){const l=KAT.lose[i];text.value=l.text;jahr.value=l.entstehung||'';obj.value=t('los')+' '+l.los+(l.titel?' · '+l.titel:'');tab(1);pruefen()}
+async function katZip(){const d=await (await fetch('/katalog_zip',{method:'POST',body:JSON.stringify({csv:KAT.csv,name:KAT.name,sprache:L})})).json();
+  if(d.zip)speichern(d.zip,L=='en'?'catalogue_review.zip':'katalogpruefung.zip','application/zip')}
+
+async function drucken(daten){
+  if(!daten){const f=foto.files[0];if(!f){dateitext.textContent=t('fotoZuerst');return}
+    daten={bild:await new Promise(res=>{const r=new FileReader();r.onload=()=>res(r.result);r.readAsDataURL(f)}),um:um.value}}
+  daten.sprache=L;laedt('erg2','analyseLaeuft');
+  const d=await (await fetch('/druck',{method:'POST',body:JSON.stringify(daten)})).json();const e=document.getElementById('erg2');
+  if(d.fehler){e.innerHTML='<div class="leer"><p>'+esc(d.fehler)+'</p></div>';return}
+  const b=d.befund,k=b.kennzahlen,farbe=b.klasse=='offset'?'c-hoch':b.klasse=='inkjet'?'c-mittel':'';
+  const zahl=(x,n)=>x.toLocaleString(L=='en'?'en-GB':'de-DE',{minimumFractionDigits:n,maximumFractionDigits:n});
+  const lpc=b.raster[0]&&b.raster[0].linien_pro_cm;
+  let h=kopf('<span class="'+farbe+'">'+esc(b.titel)+'</span>',t('ergebnis'),t('sicherheit'),SICH[L][b.sicherheit]||esc(b.sicherheit),'',RANG[b.sicherheit]);
+  h+=zahlen([[b.raster.length||'–',t('winkel')],[Math.round(k.spitzenanteil*100)+' %',t('spitzen')],[zahl(k.fein_grob,2),t('feingrob')],[lpc?Math.round(lpc)+' L/cm':zahl(k.um_pro_px,0)+' µm/px',lpc?t('rasterweite'):t('massst')]]);
+  h+='<div class="abschnitt"><div class="bilder"><figure><img src="data:image/png;base64,'+d.ausschnitt+'" alt=""><figcaption>'+t('ausschnitt')+'</figcaption></figure>'
+    +'<figure><img src="data:image/png;base64,'+d.spektrum+'" alt=""><figcaption>'+t('spektrum')+(b.raster.length?t('markiert'):'')+'</figcaption></figure></div></div>';
+  h+='<div class="abschnitt"><h3>'+t('begruendung')+'</h3><div class="liste">'+b.begruendung.map(x=>'<div class="befund-r" style="grid-template-columns:1fr"><span>'+esc(x)+'</span></div>').join('')+'</div></div>';
+  h+='<div class="abschnitt"><h3>'+t('einordnung')+'</h3><p style="margin:0">'+esc(b.hinweis)+'</p></div>';
+  e.innerHTML=h}
+
+sprache(L);
+const Q=new URLSearchParams(location.search);
+if(Q.has('beispiel')){bsp(+Q.get('beispiel'));obj.value=Q.get('objekt')||'';pruefen()}
+if(Q.has('druck')){tab(2);drucken({beispiel:Q.get('druck'),um:'10'})}
+if(Q.has('katalog')){tab(3);katBeispiel().then(katalog)}
+</script>
+</body>
+</html>

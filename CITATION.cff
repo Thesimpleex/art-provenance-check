@@ -1,0 +1,35 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it using the metadata from this file."
+title: "art-provenance-check"
+type: software
+authors:
+  - given-names: Alexander
+    family-names: Majores
+abstract: >-
+  Open-source provenance due diligence for the art trade. The tool parses
+  catalogue provenance texts in German and English, maps the years 1933 to
+  1945 as documented, inferred or open, flags ownership changes, seizure and
+  restitution keywords, and matches names against a reference list built from
+  Wikidata (Art Looting Investigation Unit, Nazi-era looted art, restitution
+  cases). It writes PDF audit records following the German Cultural Property
+  Protection Act (KGSG, sections 42 to 45), reviews whole auction catalogues
+  from CSV, and classifies print processes (offset reproduction, inkjet or
+  giclee, stone lithography) from macro photos via Fourier spectrum analysis.
+  It runs locally with a web interface. Results are research hints, not legal
+  advice.
+keywords:
+  - provenance research
+  - art market
+  - due diligence
+  - Nazi-looted art
+  - restitution
+  - cultural property
+  - KGSG
+  - Wikidata
+  - digital humanities
+  - print authentication
+  - Fourier analysis
+license: MIT
+repository-code: "https://github.com/Thesimpleex/art-provenance-check"
+version: "0.2.0"
+date-released: "2026-10-04"

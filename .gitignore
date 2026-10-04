@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+.DS_Store
+# additional local reference lists without a clear licence
+data/reference_list_openartdata_*.csv
+# generated diagnostic images
+examples/*_diagnose.png
+examples/uebersicht.png
+*.egg-info/
+build/
+dist/

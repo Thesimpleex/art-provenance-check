@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "art-provenance-check"
+version = "0.2.0"
+description = "Provenance and print-process due diligence for the art trade, run locally."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [{ name = "Alexander Majores" }]
+keywords = ["provenance", "provenance research", "due diligence", "art market", "nazi-looted art",
+            "restitution", "KGSG", "wikidata", "print authentication", "fourier analysis"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Intended Audience :: Legal Industry",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Image Recognition",
+    "Topic :: Text Processing :: Linguistic",
+]
+dependencies = ["numpy>=1.21", "scipy>=1.7", "Pillow>=9.0"]
+
+[project.urls]
+Repository = "https://github.com/Thesimpleex/art-provenance-check"
+
+[project.scripts]
+art-provenance-check = "provenance:main"
+art-printcheck = "printcheck:main"
+art-provenance-app = "app:main"
+
+[tool.setuptools]
+py-modules = ["provenance", "printcheck", "pdf_record", "texts", "app"]
