@@ -11,8 +11,6 @@ art-provenance-check reads catalogue provenance texts in German or English and m
 
 ![Provenance review](docs/provenance.gif)
 
-▶ [Watch the 20-second demo](docs/demo.mp4) (MP4, 1.9 MB)
-
 ## Why
 
 German law requires dealers and auction houses to exercise due diligence before placing cultural property on the market (Kulturgutschutzgesetz, KGSG, §§ 42–45):
