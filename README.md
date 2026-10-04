@@ -1,13 +1,13 @@
 # art-provenance-check
 
-Provenance and print-process due diligence for the art trade, run locally.
+Fast first-pass screening of provenance texts for the art trade: hundreds of lots in seconds, run locally.
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-black)](LICENSE)
 ![Python 3.9+](https://img.shields.io/badge/python-3.9%2B-black)
 ![Reference list: Wikidata CC0](https://img.shields.io/badge/reference%20list-Wikidata%20CC0-black)
 ![Runs locally](https://img.shields.io/badge/runs-locally-black)
 
-art-provenance-check reads catalogue provenance texts in German or English and marks the parts that need further research, with a focus on 1933–1945. It reviews single works or entire auction catalogues, produces an audit record as PDF, and checks macro photos of prints for signs of photomechanical reproduction. Results are research hints, not legal advice.
+art-provenance-check is a triage tool, not a replacement for provenance research. It reads catalogue provenance texts in German or English, checks them automatically against the same rules (gaps in 1933–1945, ownership changes, seizure and restitution keywords, names on a reference list) and ranks them by how urgently they need a closer look. An expert reads a single provenance in a minute; the tool's value is doing this for an entire catalogue at once and documenting each check as a PDF record. It also checks macro photos of prints for signs of photomechanical reproduction. Results are research hints, not legal advice.
 
 ![Provenance review](docs/provenance.gif)
 
@@ -19,7 +19,7 @@ German law requires dealers and auction houses to exercise due diligence before 
 - **§ 44:** for works that may have been taken through Nazi persecution between 30 January 1933 and 8 May 1945, the usual value and effort thresholds do not apply. Every such work must be checked.
 - **§ 45:** keep records of the checks for 30 years.
 
-Large houses employ provenance researchers; small houses and dealers usually do not. This tool gives them a structured first pass and a record of what was checked.
+Large houses employ provenance researchers; small houses and dealers usually do not, and still have to check every lot. This tool sorts a catalogue so that the few lots that need research come first, and keeps a record of what was checked. The research itself, database searches and archive work, remains with people.
 
 ## How it works
 
